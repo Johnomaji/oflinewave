@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+!.env.example
+
+# prisma client
+/lib/generated
+
+# local uploads (dev fallback when Vercel Blob isn't configured)
+/public/uploads
+/uploads
+/dist

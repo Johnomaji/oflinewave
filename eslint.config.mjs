@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated Prisma client and CommonJS test preload stubs.
+    "lib/generated/**",
+    "scripts/test-stubs/**",
+    "public/sw.js",
   ]),
 ]);
 

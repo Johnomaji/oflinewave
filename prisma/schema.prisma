@@ -1,0 +1,545 @@
+// Oflinewave data model.
+// Money is always stored as integer kobo (₦1 = 100 kobo) to avoid float errors.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ATTENDEE
+  DOOR_STAFF
+  ORGANIZER
+  SUPER_ADMIN
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum EventCategory {
+  PARTY
+  CONCERT
+  BRUNCH
+  POP_UP
+  DAY_PARTY
+  OTHER
+}
+
+enum TierVisibility {
+  PUBLIC
+  HIDDEN
+  /// Wave Club members only (signed in, with loyalty history)
+  MEMBERS
+}
+
+enum TransferKind {
+  TRANSFER
+  NAME_CHANGE
+}
+
+enum FeeMode {
+  PASS_TO_BUYER
+  ABSORB
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum OrderSource {
+  ONLINE
+  COMP
+  CASH
+}
+
+enum TicketStatus {
+  VALID
+  CHECKED_IN
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  INITIALIZED
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+// ─── Auth.js ────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(ATTENDEE)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts  Account[]
+  sessions  Session[]
+  orders    Order[]
+  checkIns  Ticket[]   @relation("CheckedInBy")
+  auditLogs AuditLog[]
+  refunds   Refund[]
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// ─── Events ─────────────────────────────────────────────────────────────────
+
+model Venue {
+  id      String  @id @default(cuid())
+  name    String
+  address String
+  city    String
+  mapUrl  String?
+  events  Event[]
+}
+
+model Event {
+  id                   String        @id @default(cuid())
+  slug                 String        @unique
+  title                String
+  tagline              String?
+  description          String
+  category             EventCategory @default(PARTY)
+  status               EventStatus   @default(DRAFT)
+  listed               Boolean       @default(true)
+  featured             Boolean       @default(false)
+  startsAt             DateTime
+  endsAt               DateTime?
+  venueId              String
+  posterUrl            String
+  lineup               String[]
+  ageLimit             Int?
+  dressCode            String?
+  refundPolicy         String?
+  /// [{ q: string, a: string }]
+  faqs                 Json?
+  /// null = use the global default from Setting
+  feeMode              FeeMode?
+  collectAttendeeNames Boolean       @default(false)
+  /// buyers may transfer / rename tickets until this many hours before start
+  transfersEnabled     Boolean       @default(true)
+  transferCutoffHours  Int           @default(24)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  venue      Venue           @relation(fields: [venueId], references: [id])
+  tiers      TicketTier[]
+  media      EventMedia[]
+  orders     Order[]
+  tickets    Ticket[]
+  waitlist   WaitlistEntry[]
+  promoCodes PromoCode[]
+  addOns     AddOn[]
+  analytics  AnalyticsEvent[]
+
+  @@index([status, startsAt])
+}
+
+model EventMedia {
+  id        String @id @default(cuid())
+  eventId   String
+  url       String
+  alt       String?
+  sortOrder Int    @default(0)
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model TicketTier {
+  id          String         @id @default(cuid())
+  eventId     String
+  name        String
+  description String?
+  /// kobo; 0 = free RSVP
+  price       Int
+  quantity    Int
+  /// tickets issued from paid/comp orders
+  sold        Int            @default(0)
+  minPerOrder Int            @default(1)
+  maxPerOrder Int            @default(10)
+  /// how many people one ticket admits (tables, group bundles)
+  admits      Int            @default(1)
+  salesStart  DateTime?
+  salesEnd    DateTime?
+  visibility  TierVisibility @default(PUBLIC)
+  sortOrder   Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+  tickets    Ticket[]
+}
+
+// ─── Orders & tickets ───────────────────────────────────────────────────────
+
+model Order {
+  id            String      @id @default(cuid())
+  /// human-friendly reference, also used as the payment reference
+  reference     String      @unique
+  eventId       String
+  userId        String?
+  buyerName     String
+  buyerEmail    String
+  buyerPhone    String?
+  status        OrderStatus @default(PENDING)
+  source        OrderSource @default(ONLINE)
+  subtotal      Int
+  discount      Int         @default(0)
+  fees          Int         @default(0)
+  /// what the buyer pays
+  total         Int
+  feeMode       FeeMode
+  promoCodeId   String?
+  /// inventory is held for PENDING orders until this time
+  holdExpiresAt DateTime?
+  /// secret for guest access to the confirmation page and PDF
+  accessToken   String      @unique
+  paidAt        DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  event     Event      @relation(fields: [eventId], references: [id])
+  user      User?      @relation(fields: [userId], references: [id])
+  promoCode PromoCode? @relation(fields: [promoCodeId], references: [id])
+  items     OrderItem[]
+  tickets   Ticket[]
+  payments  Payment[]
+  refunds   Refund[]
+  addOns    OrderAddOn[]
+
+  @@index([eventId, status])
+  @@index([buyerEmail])
+  @@index([status, holdExpiresAt])
+}
+
+model OrderItem {
+  id            String   @id @default(cuid())
+  orderId       String
+  tierId        String
+  quantity      Int
+  unitPrice     Int
+  attendeeNames String[]
+
+  order Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  tier  TicketTier @relation(fields: [tierId], references: [id])
+}
+
+model Ticket {
+  id            String       @id @default(cuid())
+  /// short code printed on the ticket for manual lookup
+  code          String       @unique
+  /// signed token encoded in the QR code
+  qrToken       String       @unique
+  orderId       String
+  eventId       String
+  tierId        String
+  holderName    String
+  holderEmail   String
+  status        TicketStatus @default(VALID)
+  checkedInAt   DateTime?
+  checkedInById String?
+  transferredAt DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  order       Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  event       Event      @relation(fields: [eventId], references: [id])
+  tier        TicketTier @relation(fields: [tierId], references: [id])
+  checkedInBy User?      @relation("CheckedInBy", fields: [checkedInById], references: [id])
+  refunds     Refund[]
+  transfers   TicketTransfer[]
+
+  @@index([eventId, status])
+  @@index([holderEmail])
+}
+
+model PromoCode {
+  id        String       @id @default(cuid())
+  /// stored uppercase
+  code      String       @unique
+  eventId   String?
+  type      DiscountType
+  /// PERCENT: whole percent (1–100). FIXED: kobo off the order.
+  value     Int
+  maxUses   Int?
+  uses      Int          @default(0)
+  expiresAt DateTime?
+  active    Boolean      @default(true)
+  /// empty = applies to all tiers
+  tierIds   String[]
+  /// set for Wave Club referral codes: this member earns points when it's used
+  referrerEmail String?
+  createdAt DateTime     @default(now())
+
+  event  Event?  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  orders Order[]
+}
+
+model WaitlistEntry {
+  id         String    @id @default(cuid())
+  eventId    String
+  email      String
+  name       String?
+  notifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, email])
+}
+
+// ─── Payments ───────────────────────────────────────────────────────────────
+
+model Payment {
+  id         String        @id @default(cuid())
+  orderId    String
+  provider   String
+  reference  String        @unique
+  status     PaymentStatus @default(INITIALIZED)
+  amount     Int
+  rawPayload Json?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+/// Every webhook delivery we've processed; the unique key makes handling idempotent.
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  provider    String
+  eventKey    String   @unique
+  payload     Json
+  processedAt DateTime @default(now())
+}
+
+model Refund {
+  id          String       @id @default(cuid())
+  orderId     String
+  /// null = whole order
+  ticketId    String?
+  amount      Int
+  reason      String?
+  status      RefundStatus @default(PENDING)
+  providerRef String?
+  createdById String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  ticket    Ticket? @relation(fields: [ticketId], references: [id])
+  createdBy User?   @relation(fields: [createdById], references: [id])
+}
+
+// ─── Team, settings, misc ───────────────────────────────────────────────────
+
+/// Invites: when this email signs in, they get this role.
+model StaffMember {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  role        Role
+  invitedById String?
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String
+  data      Json?
+  createdAt DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([entity, entityId])
+}
+
+/// Single-row table (id = 1).
+model Setting {
+  id             Int      @id @default(1)
+  brandName      String   @default("Oflinewave")
+  contactEmail   String   @default("hello@oflinewave.com")
+  /// basis points: 500 = 5%
+  feePercentBps  Int      @default(500)
+  /// kobo per paid ticket
+  feeFlat        Int      @default(10000)
+  defaultFeeMode FeeMode  @default(PASS_TO_BUYER)
+  /// editable email copy, merged over defaults in lib/email/templates.ts
+  emailTemplates Json?
+  instagramUrl   String?
+  twitterUrl     String?
+  tiktokUrl      String?
+  updatedAt      DateTime @updatedAt
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model TicketTransfer {
+  id        String       @id @default(cuid())
+  ticketId  String
+  kind      TransferKind
+  fromName  String
+  fromEmail String
+  toName    String
+  toEmail   String
+  /// staff member, when done from admin
+  actorId   String?
+  createdAt DateTime     @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
+
+// ─── Add-ons (drinks, parking, upgrades) ────────────────────────────────────
+
+model AddOn {
+  id          String   @id @default(cuid())
+  eventId     String
+  name        String
+  description String?
+  /// kobo
+  price       Int
+  quantity    Int
+  sold        Int      @default(0)
+  maxPerOrder Int      @default(10)
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  event  Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  orders OrderAddOn[]
+}
+
+model OrderAddOn {
+  id        String @id @default(cuid())
+  orderId   String
+  addOnId   String
+  quantity  Int
+  unitPrice Int
+  /// how many have been handed over at the venue
+  redeemed  Int    @default(0)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  addOn AddOn @relation(fields: [addOnId], references: [id])
+}
+
+// ─── Wave Club loyalty ──────────────────────────────────────────────────────
+
+/// Keyed by email so guest purchases count before someone signs up.
+model LoyaltyAccount {
+  id             String        @id @default(cuid())
+  email          String        @unique
+  points         Int           @default(0)
+  lifetimePoints Int           @default(0)
+  referralCode   String?       @unique
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  entries        PointsEntry[]
+}
+
+model PointsEntry {
+  id        String   @id @default(cuid())
+  accountId String
+  delta     Int
+  reason    String
+  orderId   String?
+  createdAt DateTime @default(now())
+
+  account LoyaltyAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  /// one award per reason per order, so retries can't double-credit
+  @@unique([accountId, orderId, reason])
+}
+
+// ─── First-party analytics (no cookies) ─────────────────────────────────────
+
+model AnalyticsEvent {
+  id          String   @id @default(cuid())
+  /// event_view | checkout_started | paid
+  type        String
+  eventId     String?
+  orderId     String?
+  /// salted daily hash of IP + user agent; not reversible, rotates every day
+  visitorHash String?
+  referrer    String?
+  createdAt   DateTime @default(now())
+
+  event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([type, createdAt])
+  @@index([eventId, type])
+}

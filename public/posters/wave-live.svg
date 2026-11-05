@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0" stop-color="#141414"/><stop offset="0.55" stop-color="#2B0F06"/><stop offset="1" stop-color="#FF5A1F"/></linearGradient>
+<radialGradient id="sun" cx="0.72" cy="0.24" r="0.32"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+<filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.5 0"/></filter>
+</defs>
+<rect width="800" height="1000" fill="url(#bg)"/>
+
+<g><path d="M -50 150 C 150 110, 250 190, 400 150 S 650 110, 850 150" fill="none" stroke="#FF5A1F" stroke-opacity="0.12" stroke-width="2"/><path d="M -50 178 C 150 132, 250 224, 400 178 S 650 132, 850 178" fill="none" stroke="#FF5A1F" stroke-opacity="0.16999999999999998" stroke-width="2"/><path d="M -50 206 C 150 154, 250 258, 400 206 S 650 154, 850 206" fill="none" stroke="#FF5A1F" stroke-opacity="0.22" stroke-width="2"/><path d="M -50 234 C 150 176, 250 292, 400 234 S 650 176, 850 234" fill="none" stroke="#FF5A1F" stroke-opacity="0.27" stroke-width="2"/><path d="M -50 262 C 150 198, 250 326, 400 262 S 650 198, 850 262" fill="none" stroke="#FF5A1F" stroke-opacity="0.32" stroke-width="2"/><path d="M -50 290 C 150 220, 250 360, 400 290 S 650 220, 850 290" fill="none" stroke="#FF5A1F" stroke-opacity="0.37" stroke-width="2"/><path d="M -50 318 C 150 242, 250 394, 400 318 S 650 242, 850 318" fill="none" stroke="#FF5A1F" stroke-opacity="0.42000000000000004" stroke-width="2"/></g>
+<g font-family="'Arial Black','Helvetica Neue',Arial,sans-serif" font-weight="900" fill="#FF5A1F" letter-spacing="-6"><text x="56" y="540" font-size="190">WAVE</text><text x="56" y="714.8" font-size="190">LIVE</text></g>
+<text x="60" y="940" font-family="Helvetica,Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="4" fill="#FF5A1F">LAGOS SESSIONS · LIVE BAND</text>
+<text x="60" y="92" font-family="Helvetica,Arial,sans-serif" font-size="24" font-weight="800" letter-spacing="2" fill="#FF5A1F">OFLINEWAVE</text>
+<text x="740" y="92" text-anchor="end" font-family="Helvetica,Arial,sans-serif" font-size="24" font-weight="800" letter-spacing="2" fill="#FF5A1F">LAGOS</text>
+<rect width="800" height="1000" filter="url(#grain)" opacity="0.55"/>
+</svg>
