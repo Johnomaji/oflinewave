@@ -15,7 +15,7 @@ const TAR = process.platform === "win32" ? path.join(process.env.SystemRoot ?? "
 
 const EXCLUDE = [
   "./node_modules", "./.next", "./dist", "./uploads", "./public/uploads", "./.git", "./.vercel", "./.claude",
-  "./.env", "./.env.local", "./.env.*.local", "./.env.development", "./.env.production",
+  "./.env", "./.env.local", "./.env.*.local", "./.env.development", "./.env.production", "./.env.deploy",
   "./lib/generated", "*.tsbuildinfo", "./next-env.d.ts",
 ];
 

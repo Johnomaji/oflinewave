@@ -30,3 +30,4 @@ export async function requireRole(roles: Role[], next = "/admin"): Promise<Curre
 export const requireAdmin = (next?: string) => requireRole(ADMIN_ROLES, next);
 export const requireScanner = (next = "/scan") => requireRole(SCAN_ROLES, next);
 export const isAdmin = (user: CurrentUser | null) => !!user && ADMIN_ROLES.includes(user.role);
+export const canScan = (user: CurrentUser | null) => !!user && SCAN_ROLES.includes(user.role);

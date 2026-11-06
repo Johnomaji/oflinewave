@@ -36,10 +36,16 @@ if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) providers.push
 
 export const googleEnabled = Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET);
 
-/** Apply invites and the bootstrap super admin on every sign-in. */
+/** SUPER_ADMIN_EMAIL may list several addresses, comma-separated. */
+const superAdminEmails = (process.env.SUPER_ADMIN_EMAIL ?? "")
+  .split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
+
+/** Apply invites and the bootstrap super admins on every sign-in. */
 async function syncRole(userId: string, email: string) {
   const normalized = email.toLowerCase();
-  if (process.env.SUPER_ADMIN_EMAIL && normalized === process.env.SUPER_ADMIN_EMAIL.toLowerCase()) {
+  if (superAdminEmails.includes(normalized)) {
     await db.user.update({ where: { id: userId }, data: { role: "SUPER_ADMIN" } });
     return;
   }

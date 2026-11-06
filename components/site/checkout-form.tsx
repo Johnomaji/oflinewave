@@ -173,10 +173,10 @@ export function CheckoutForm({
                     </p>
                     {tier.description && <p className="text-sm text-muted">{tier.description}</p>}
                     <p className="mt-1 text-sm">
-                      <span className="font-semibold text-brand">{formatPrice(tier.price)}</span>
-                      {tier.admits > 1 && <span className="text-muted"> · admits {tier.admits}</span>}
-                      {available && tier.left <= 20 && <span className="text-muted"> · {tier.left} left</span>}
-                      {!available && !tier.locked && <span className="text-muted"> · {tier.onSale ? "Sold out" : (tier.offSaleLabel ?? "Not on sale")}</span>}
+                      <span className="whitespace-nowrap font-semibold text-brand">{formatPrice(tier.price)}</span>
+                      {tier.admits > 1 && <span className="whitespace-nowrap text-muted"> · admits {tier.admits}</span>}
+                      {available && tier.left <= 20 && <span className="whitespace-nowrap text-muted"> · {tier.left} left</span>}
+                      {!available && !tier.locked && <span className="whitespace-nowrap text-muted"> · {tier.onSale ? "Sold out" : (tier.offSaleLabel ?? "Not on sale")}</span>}
                     </p>
                     {tier.locked && (
                       <p className="mt-1 text-xs text-muted">

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { getCurrentUser, isAdmin } from "@/lib/dal";
+import { canScan, getCurrentUser, isAdmin, type CurrentUser } from "@/lib/dal";
 import { Logo } from "./logo";
 import { MobileMenu } from "./mobile-menu";
 
@@ -11,20 +11,35 @@ export const NAV = [
   { href: "/faq", label: "FAQ" },
 ];
 
+const MOBILE_NAV = [...NAV, { href: "/tickets", label: "My tickets" }];
+
+/** Staff entry points, so admins and door staff never have to type a URL. */
+function staffLinks(user: CurrentUser | null) {
+  const links: { href: string; label: string }[] = [];
+  if (isAdmin(user)) links.push({ href: "/admin", label: "Admin" });
+  if (canScan(user)) links.push({ href: "/scan", label: "Door scanner" });
+  return links;
+}
+
 async function AccountLinks() {
   const user = await getCurrentUser();
   return (
     <>
-      {isAdmin(user) && (
-        <Link href="/admin" className="text-sm text-muted transition-colors hover:text-white">
-          Admin
+      {staffLinks(user).map((item) => (
+        <Link key={item.href} href={item.href} className="text-sm text-muted transition-colors hover:text-white">
+          {item.label}
         </Link>
-      )}
+      ))}
       <Link href="/tickets" className="text-sm text-muted transition-colors hover:text-white">
         {user ? "My tickets" : "Find my tickets"}
       </Link>
     </>
   );
+}
+
+async function AccountMobileMenu() {
+  const user = await getCurrentUser();
+  return <MobileMenu items={[...MOBILE_NAV, ...staffLinks(user)]} />;
 }
 
 export function Header() {
@@ -56,7 +71,9 @@ export function Header() {
             Get tickets
           </Link>
         </div>
-        <MobileMenu items={[...NAV, { href: "/tickets", label: "My tickets" }]} />
+        <Suspense fallback={<MobileMenu items={MOBILE_NAV} />}>
+          <AccountMobileMenu />
+        </Suspense>
       </div>
     </header>
   );

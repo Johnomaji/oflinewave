@@ -1,4 +1,5 @@
 import { ArrowRight, CalendarDays, MapPin, QrCode, Smartphone, Ticket } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "@/components/site/event-card";
@@ -10,6 +11,7 @@ import { formatEventDate, formatEventTime } from "@/lib/dates";
 import { fromPrice, getFeaturedEvent, getPastEvents, getUpcomingEvents, isSoldOut } from "@/lib/data/events";
 import { formatPrice } from "@/lib/money";
 import { getSettings } from "@/lib/settings";
+import { cn } from "@/lib/utils";
 
 export default async function HomePage() {
   const [featured, upcoming, past, settings] = await Promise.all([
@@ -19,6 +21,9 @@ export default async function HomePage() {
     getSettings(),
   ]);
   const rest = upcoming.filter((e) => e.id !== featured?.id).slice(0, 6);
+  const highlights = [...HIGHLIGHT_PHOTOS, ...[...upcoming, ...past].map((e) => ({ src: e.posterUrl, label: e.title }))]
+    .filter((item, i, all) => all.findIndex((x) => x.src === item.src) === i)
+    .slice(0, 8);
 
   return (
     <>
@@ -64,7 +69,8 @@ export default async function HomePage() {
 
       <section className="relative overflow-hidden border-y border-line bg-surface">
         <Glow className="-right-24 -top-24 size-96" />
-        <div className="relative mx-auto grid max-w-7xl gap-10 px-5 py-20 md:grid-cols-2 md:items-center md:px-8">
+        <div className="relative mx-auto grid max-w-7xl grid-cols-1 gap-10 px-5 py-20 md:grid-cols-[0.8fr_1fr_1fr] md:items-center md:px-8">
+          <FloorPhoto src="/photos/floor-1.jpg" alt="Guest at an Oflinewave night wearing the official lanyard" className="mx-auto w-full max-w-[16rem] rotate-[-3deg] md:max-w-none" />
           <Reveal>
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-brand">The philosophy</p>
             <h2 className="text-4xl font-extrabold leading-[0.95] md:text-6xl">
@@ -98,16 +104,16 @@ export default async function HomePage() {
           external
         />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {[...past, ...upcoming].slice(0, 8).map((event, i) => (
+          {highlights.map((item) => (
             <a
-              key={`${event.id}-${i}`}
+              key={item.src}
               href={settings.instagramUrl ?? "https://instagram.com"}
               target="_blank"
               rel="noopener noreferrer"
               className="group relative overflow-hidden rounded-xl"
-              aria-label={`${event.title} on Instagram`}
+              aria-label={`${item.label} on Instagram`}
             >
-              <Poster src={event.posterUrl} alt="" sizes="25vw" className="aspect-square transition duration-500 group-hover:scale-105" />
+              <Poster src={item.src} alt="" sizes="(min-width: 768px) 25vw, 50vw" className="aspect-square transition duration-500 group-hover:scale-105" />
               <span className="absolute inset-0 bg-brand/0 transition group-hover:bg-brand/20" />
             </a>
           ))}
@@ -125,6 +131,24 @@ export default async function HomePage() {
         </div>
       </section>
     </>
+  );
+}
+
+/** Shots from past nights, shown in the Instagram strip ahead of event posters. */
+const HIGHLIGHT_PHOTOS = [
+  { src: "/photos/floor-1.jpg", label: "Oflinewave night" },
+  { src: "/photos/floor-2.jpg", label: "Oflinewave night" },
+  { src: "/photos/floor-3.jpg", label: "Oflinewave night" },
+];
+
+function FloorPhoto({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  return (
+    <div className={cn("relative", className)}>
+      <div className="absolute -inset-3 rounded-[2rem] bg-brand/25 blur-2xl" aria-hidden />
+      <div className="relative aspect-[3/4] overflow-hidden rounded-card border border-white/10 shadow-2xl">
+        <Image src={src} alt={alt} fill sizes="(min-width: 768px) 25vw, 16rem" className="object-cover object-[50%_25%]" />
+      </div>
+    </div>
   );
 }
 
@@ -151,12 +175,12 @@ function Hero({ featured }: { featured: Awaited<ReturnType<typeof getFeaturedEve
     <section className="relative overflow-hidden" aria-labelledby="hero-heading">
       <Glow className="-left-40 top-10 size-[36rem]" />
       <Glow className="-right-40 bottom-0 size-[28rem] opacity-60" />
-      <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 pb-16 pt-10 md:grid-cols-[1.1fr_0.9fr] md:gap-16 md:px-8 md:pb-24 md:pt-16">
-        <div className="order-2 md:order-1">
+      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-5 pb-16 pt-10 md:grid-cols-[1.1fr_0.9fr] md:gap-16 md:px-8 md:pb-24 md:pt-16">
+        <div className="order-2 min-w-0 md:order-1">
           <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-brand/40 bg-brand/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-brand">
             <span className="size-1.5 rounded-full bg-brand animate-pulse-glow" /> Next up
           </p>
-          <h1 id="hero-heading" className="text-[clamp(3.5rem,11vw,8.5rem)] font-extrabold leading-[0.85]">
+          <h1 id="hero-heading" className="text-[clamp(2.5rem,10vw,7.5rem)] font-extrabold leading-[0.9] text-balance [overflow-wrap:anywhere]">
             {featured.title}
           </h1>
           {featured.tagline && <p className="mt-5 max-w-lg text-lg text-muted md:text-xl">{featured.tagline}</p>}
@@ -181,7 +205,7 @@ function Hero({ featured }: { featured: Awaited<ReturnType<typeof getFeaturedEve
             </div>
           </dl>
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button asChild size="lg" className="shadow-glow">
+            <Button asChild size="lg" className="w-full shadow-glow sm:w-auto">
               <Link href={`/events/${featured.slug}#tickets`}>
                 <Ticket /> {soldOut ? "Join the waitlist" : "Get tickets"}
               </Link>
@@ -193,17 +217,18 @@ function Hero({ featured }: { featured: Awaited<ReturnType<typeof getFeaturedEve
             )}
           </div>
         </div>
-        <Link href={`/events/${featured.slug}`} className="order-1 block md:order-2" aria-label={`${featured.title} details`}>
-          <div className="relative mx-auto max-w-md rotate-[-2deg] transition duration-500 hover:rotate-0 motion-safe:animate-[poster-in_0.8s_cubic-bezier(0.22,1,0.36,1)]">
-              <div className="absolute -inset-4 rounded-[2rem] bg-brand/30 blur-3xl" aria-hidden />
-              <Poster
-                src={featured.posterUrl}
-                alt={`${featured.title} poster`}
-                priority
-                sizes="(min-width: 768px) 40vw, 90vw"
-                className="relative rounded-card border border-white/10 shadow-2xl"
-              />
-            </div>
+        <Link href={`/events/${featured.slug}`} className="order-1 block min-w-0 md:order-2" aria-label={`${featured.title} details`}>
+          <div className="relative mx-auto w-full max-w-[20rem] rotate-[-2deg] sm:max-w-sm md:max-w-md transition duration-500 hover:rotate-0 motion-safe:animate-[poster-in_0.8s_cubic-bezier(0.22,1,0.36,1)]">
+            <div className="absolute -inset-4 rounded-[2rem] bg-brand/30 blur-3xl" aria-hidden />
+            <Poster
+              src={featured.posterUrl}
+              alt={`${featured.title} poster`}
+              priority
+              sizes="(min-width: 768px) 40vw, 80vw"
+              waves
+              className="relative rounded-card border border-white/10 shadow-2xl"
+            />
+          </div>
         </Link>
       </div>
       <WaveLine className="h-16 md:h-24" />

@@ -33,7 +33,7 @@ export async function TicketCard({ ticket, event, footer, transferredTo }: Ticke
             {ticket.tier.name}
             {ticket.tier.admits > 1 && ` · admits ${ticket.tier.admits}`}
           </p>
-          <p className="truncate font-display text-xl font-extrabold">{event.title}</p>
+          <p className="line-clamp-2 font-display text-lg leading-tight font-extrabold [overflow-wrap:anywhere] sm:text-xl">{event.title}</p>
         </div>
         <Badge variant={status.variant} className="shrink-0 bg-ink/90">
           {status.label}
@@ -46,13 +46,13 @@ export async function TicketCard({ ticket, event, footer, transferredTo }: Ticke
       <div className="flex flex-col items-center gap-4 p-5 sm:flex-row sm:items-center">
         {svg ? (
           <div
-            className="size-48 shrink-0 rounded-xl bg-white p-2 [&>svg]:h-full [&>svg]:w-full"
+            className="aspect-square w-full max-w-64 shrink-0 rounded-xl bg-white p-2 sm:size-48 [&>svg]:h-full [&>svg]:w-full"
             role="img"
             aria-label={`QR code for ticket ${ticket.code}`}
             dangerouslySetInnerHTML={{ __html: svg }}
           />
         ) : (
-          <div className="grid size-48 shrink-0 place-items-center rounded-xl border border-dashed border-line text-center text-sm text-muted">
+          <div className="grid aspect-square w-full max-w-64 shrink-0 place-items-center rounded-xl border border-dashed border-line p-4 text-center text-sm text-muted sm:size-48">
             {transferredTo ? `Transferred to ${transferredTo}` : ticket.status === "CHECKED_IN" && ticket.checkedInAt ? `Scanned ${formatDateTime(ticket.checkedInAt)}` : "QR disabled"}
           </div>
         )}

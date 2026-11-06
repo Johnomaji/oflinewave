@@ -60,7 +60,7 @@ To sign in as the admin, go to `/login`, enter `SUPER_ADMIN_EMAIL` and click the
 | `APP_URL` | ✅ | Public base URL, no trailing slash. Used in emails, QR image links and OG tags. |
 | `AUTH_SECRET` | ✅ | Auth.js session encryption. |
 | `TICKET_SIGNING_SECRET` | ✅ | HMAC key for QR codes. **Never rotate after tickets exist**: old QRs would stop scanning. |
-| `SUPER_ADMIN_EMAIL` | ✅ | Gets `SUPER_ADMIN` on sign-in. Use it to bootstrap the first admin. |
+| `SUPER_ADMIN_EMAIL` | ✅ | Gets `SUPER_ADMIN` on sign-in. Use it to bootstrap the first admin. Comma-separate several emails for more than one. |
 | `PAYSTACK_SECRET_KEY` | ✅ prod | `sk_test_…` for staging, `sk_live_…` for production. |
 | `RESEND_API_KEY` | ✅ prod | The sending domain must be verified in Resend. |
 | `EMAIL_FROM` | | Defaults to `Oflinewave <tickets@oflinewave.com>`. |

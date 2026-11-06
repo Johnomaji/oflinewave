@@ -104,7 +104,7 @@ export async function sendTestEmail(_prev: ActionState, formData: FormData): Pro
   const key = TEMPLATE_KEYS.find((k) => k === formData.get("template"));
   if (!key) return { error: "Unknown template." };
   const copy = renderTemplate((await getTemplates())[key], {
-    event: "Signal Lost",
+    event: "Shut Up & Dance 2.0",
     name: user.name ?? "Test Raver",
     from: "Ada",
     date: "Sat 28 Nov, 22:00",

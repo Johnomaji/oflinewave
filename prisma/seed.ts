@@ -171,7 +171,8 @@ async function main() {
   const fee = { feePercentBps: settings.feePercentBps, feeFlat: settings.feeFlat };
 
   // Staff
-  const adminEmail = (process.env.SUPER_ADMIN_EMAIL ?? "admin@oflinewave.test").toLowerCase();
+  // The first SUPER_ADMIN_EMAIL is seeded; any others are promoted when they sign in.
+  const adminEmail = (process.env.SUPER_ADMIN_EMAIL?.split(",")[0]?.trim() || "admin@oflinewave.test").toLowerCase();
   const admin = await db.user.upsert({
     where: { email: adminEmail },
     update: { role: "SUPER_ADMIN" },
@@ -214,6 +215,9 @@ async function main() {
       mapUrl: "https://maps.google.com/?q=Ozumba+Mbadiwe+Victoria+Island",
     },
   });
+  const chancery = await db.venue.create({
+    data: { name: "The Chancery Hotel", address: "Owo, Ondo State", city: "Owo" },
+  });
   const rooftop = await db.venue.create({
     data: { name: "Skyline Deck", address: "22 Adeola Odeku Street, Victoria Island", city: "Lagos" },
   });
@@ -224,27 +228,27 @@ async function main() {
     { q: "What's the refund policy?", a: "Tickets are non-refundable unless the event is cancelled or moved. You can transfer your ticket to a friend up to 24 hours before doors." },
   ];
 
-  // 1. Featured warehouse party
+  // 1. Featured party (the crew's real poster)
   const signalLost = await createEvent(
     {
-      slug: "signal-lost",
-      title: "Signal Lost",
-      tagline: "A phones-down warehouse night. No signal, all sound.",
+      slug: "shut-up-dance-2",
+      title: "Shut Up & Dance 2.0",
+      tagline: "One last dance. Oflinewave in collaboration with Ifychops.",
       description:
-        "We're switching off the bars on your phone and turning up the bass. Signal Lost is six hours of amapiano, afro-house and left-field club cuts in a raw Ebute Metta warehouse.\n\nPhones get pouched at the door. Nobody's filming, nobody's posting, everyone's dancing.",
+        "Shut Up & Dance is back for one last dance. Oflinewave and Ifychops take over The Chancery Hotel, Owo, from 5pm till late.\n\nSound by DJ Kay Unique, with Hypeman Biggie, Heniolastickz and live sax. Phones down, volume up.",
       category: "PARTY",
       status: "PUBLISHED",
       featured: true,
-      startsAt: lagos(24, 22),
-      endsAt: lagos(25, 4),
-      posterUrl: "/posters/signal-lost.svg",
-      lineup: ["DJ Kaye", "Toni Wavy", "Midnight Jollof", "Sola B2B Femz"],
+      startsAt: lagos(24, 17),
+      endsAt: lagos(24, 23),
+      posterUrl: "/posters/shut-up-dance-2.jpg",
+      lineup: ["DJ Kay Unique", "Hypeman Biggie", "Heniolastickz", "Sax"],
       ageLimit: 18,
-      dressCode: "All black, comfortable shoes. You'll be dancing.",
+      dressCode: "Come colourful. Come ready to dance.",
       refundPolicy: "Non-refundable. Transferable until 24 hours before doors.",
       faqs: standardFaqs,
-      venue: { connect: { id: warehouse.id } },
-      media: { create: [{ url: "/posters/blackout-vol-1.svg", alt: "Blackout Vol. 1 crowd poster", sortOrder: 0 }] },
+      venue: { connect: { id: chancery.id } },
+      media: { create: [{ url: "/photos/floor-3.jpg", alt: "Two guests wearing Oflinewave lanyards", sortOrder: 0 }] },
     },
     [
       { name: "Early Bird", description: "For the ones who move first.", price: 800_000, quantity: 150, sell: 150, salesEnd: lagos(-3, 23) },
@@ -324,8 +328,15 @@ async function main() {
       status: "PUBLISHED",
       startsAt: lagos(-52, 22),
       endsAt: lagos(-51, 4),
-      posterUrl: "/posters/blackout-vol-1.svg",
+      posterUrl: "/photos/floor-3.jpg",
       lineup: ["DJ Kaye", "Femz"],
+      media: {
+        create: [
+          { url: "/photos/floor-1.jpg", alt: "Guest in a butterfly top wearing an Oflinewave lanyard", sortOrder: 0 },
+          { url: "/photos/floor-2.jpg", alt: "Guest wearing an Oflinewave official pass", sortOrder: 1 },
+          { url: "/photos/floor-3.jpg", alt: "Two guests wearing Oflinewave lanyards", sortOrder: 2 },
+        ],
+      },
       ageLimit: 18,
       venue: { connect: { id: warehouse.id } },
     },

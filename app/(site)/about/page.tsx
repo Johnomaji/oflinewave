@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ContentPage } from "@/components/site/content-page";
@@ -20,6 +21,19 @@ export default function AboutPage() {
         </>
       }
       intro="Oflinewave is a Lagos crew that throws nights for people who'd rather feel it than film it."
+      media={
+        <div className="relative aspect-[4/5] overflow-hidden rounded-card border border-white/10 sm:aspect-[16/10]">
+          <Image
+            src="/photos/floor-2.jpg"
+            alt="Guest at an Oflinewave night wearing the official pass"
+            fill
+            priority
+            sizes="(min-width: 768px) 48rem, 100vw"
+            className="object-cover object-[50%_22%]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent" aria-hidden />
+        </div>
+      }
     >
       <p>We started with one rule: the phone stays in your pocket. What happened next surprised us. People talked. People danced like nobody was watching, because nobody was.</p>
       <h2>What we do</h2>

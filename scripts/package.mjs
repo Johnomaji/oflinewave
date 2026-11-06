@@ -7,7 +7,7 @@
  * Secrets are NOT included: set them as environment variables on the host.
  */
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync } from "node:fs";
+import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
@@ -84,11 +84,42 @@ for (const name of linuxPkgs) {
 }
 rmSync(tmp, { recursive: true, force: true });
 
-// 5. Zip with forward-slash paths (bsdtar ships with Windows 10+, macOS and most Linux).
+// 5. Hosts like Hostinger always run `npm install` + `npm run build` on an upload. On the server
+//    itself that would either rebuild (and fail: its Linux is too old for Next's compiler) or prune
+//    the bundled node_modules. So the app goes in server/, and the top level gets a package.json
+//    with nothing to install, a no-op build and `node server.js` as the start command.
+const upload = path.join(root, ".next", "upload");
+rmSync(upload, { recursive: true, force: true });
+mkdirSync(upload, { recursive: true });
+// Copy rather than rename: on Windows, antivirus or an editor's file watcher often holds the folder open.
+cpSync(standalone, path.join(upload, "server"), { recursive: true });
+const pkg = {
+  name: "oflinewave",
+  private: true,
+  scripts: { build: "node build.js", start: "node server.js" },
+  engines: { node: ">=20.9" },
+};
+writeFileSync(path.join(upload, "package.json"), JSON.stringify(pkg, null, 2) + "\n");
+// Hosts with a Next.js preset (Hostinger) look for Next's usual output after the build, so the
+// "build" just puts the prebuilt server where `next build` would have.
+writeFileSync(
+  path.join(upload, "build.js"),
+  `// Prebuilt upload: nothing to compile. Lay out the server where a Next.js host expects it.
+const { cpSync, rmSync } = require("node:fs");
+rmSync(".next/standalone", { recursive: true, force: true });
+cpSync("server", ".next/standalone", { recursive: true });
+cpSync("server/.next/static", ".next/static", { recursive: true });
+cpSync("server/public", "public", { recursive: true });
+console.log("Prebuilt upload: server copied to .next/standalone.");
+`,
+);
+writeFileSync(path.join(upload, "server.js"), '// Prebuilt app lives in server/ so the host\'s `npm install` leaves it alone.\nrequire("./server/server.js");\n');
+
+// 6. Zip with forward-slash paths (bsdtar ships with Windows 10+, macOS and most Linux).
 const dist = path.join(root, "dist");
 mkdirSync(dist, { recursive: true });
 const zip = path.join(dist, `oflinewave-${new Date().toISOString().slice(0, 10)}.zip`);
 rmSync(zip, { force: true });
-run(TAR, ["-a", "-c", "-f", zip, "-C", standalone, "."]);
+run(TAR, ["-a", "-c", "-f", zip, "-C", upload, "."]);
 console.log(`\nUpload this file: ${path.relative(root, zip)}  (${(lstatSync(zip).size / 1e6).toFixed(1)} MB)`);
 console.log("Then follow DEPLOY.md (option B).");

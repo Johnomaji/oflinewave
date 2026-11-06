@@ -23,6 +23,7 @@ export function EventCard({ event, past = false, priority }: { event: EventCardD
           src={event.posterUrl}
           alt={`${event.title} poster`}
           priority={priority}
+          waves
           className="transition duration-500 group-hover:scale-[1.03]"
         />
         <div className="absolute left-3 top-3 flex flex-col items-center rounded-xl bg-ink/85 px-3 py-2 text-center backdrop-blur">

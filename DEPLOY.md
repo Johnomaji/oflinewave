@@ -52,6 +52,10 @@ Run `npm run zip:source` again, upload, and redeploy. New database changes are a
 
 To update: run `npm run package`, then stop the app, empty the folder, upload and extract the new zip, and start it again.
 
+**Hostinger Node.js app (or any host that insists on building):** upload the same zip. The built app sits in `server/`, and the top-level `package.json` has nothing to install and a build step that does nothing, so the host's `npm install` and `npm run build` pass without touching it. Set the start command to `npm start` (or entry file `server.js`) and add the environment variables below.
+
+If `npm run package` stops with **"Timed out trying to acquire a postgres advisory lock"**, an old database connection is still holding the migration lock. In the Neon console, restart the compute (Branches → your branch → Computes → Restart) and run it again. Setting `DATABASE_URL_UNPOOLED` (Neon's direct connection) for builds prevents it.
+
 ---
 
 ## Environment variables
@@ -64,7 +68,7 @@ Set these in the host's control panel. Never upload a `.env` file.
 | `APP_URL` | `https://oflinewave.com` (no trailing slash) |
 | `AUTH_SECRET` | a new random value: run `npx auth secret` |
 | `TICKET_SIGNING_SECRET` | a new random value, 32+ characters. **Never change it later**, or every issued ticket stops scanning |
-| `SUPER_ADMIN_EMAIL` | your email; you become admin the first time you sign in |
+| `SUPER_ADMIN_EMAIL` | your email; you become admin the first time you sign in. For several admins, comma-separate them: `you@example.com,partner@example.com` |
 | `PAYSTACK_SECRET_KEY` | `sk_test_…` while testing, `sk_live_…` for real sales |
 | `RESEND_API_KEY` | from Resend, after verifying your domain there |
 | `EMAIL_FROM` | `Oflinewave <tickets@oflinewave.com>` |

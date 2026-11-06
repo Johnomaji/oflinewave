@@ -12,6 +12,19 @@ export type EmailMessage = {
 
 let client: Resend | null = null;
 
+// Resend allows 10 requests a second per team. Space sends out (8/s) so a ticket rush
+// queues instead of failing, and back off if another process still trips the limit.
+const SEND_INTERVAL_MS = 125;
+const RETRY_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 16_000, 30_000];
+let nextSendAt = 0;
+
+async function waitForSendSlot() {
+  const now = Date.now();
+  const slot = Math.max(now, nextSendAt);
+  nextSendAt = slot + SEND_INTERVAL_MS;
+  if (slot > now) await new Promise((resolve) => setTimeout(resolve, slot - now));
+}
+
 /**
  * Sends via Resend when RESEND_API_KEY is set. In development without a key,
  * the message is logged to the server console instead so flows stay testable.
@@ -29,7 +42,7 @@ export async function sendEmail(message: EmailMessage) {
   }
 
   client ??= new Resend(apiKey);
-  const { data, error } = await client.emails.send({
+  const payload = {
     from: process.env.EMAIL_FROM ?? "Oflinewave <tickets@oflinewave.com>",
     to: message.to,
     subject: message.subject,
@@ -40,7 +53,15 @@ export async function sendEmail(message: EmailMessage) {
       content: a.content,
       contentType: a.contentType,
     })),
-  });
-  if (error) throw new Error(`Email send failed: ${error.message}`);
-  return { id: data?.id ?? "" };
+  };
+  for (let attempt = 0; ; attempt++) {
+    await waitForSendSlot();
+    const { data, error } = await client.emails.send(payload);
+    if (!error) return { id: data?.id ?? "" };
+    if (error.name !== "rate_limit_exceeded" || attempt >= RETRY_DELAYS_MS.length) {
+      throw new Error(`Email send failed: ${error.message}`);
+    }
+    // Jitter so a burst of retries doesn't collide again.
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt] * (0.5 + Math.random())));
+  }
 }

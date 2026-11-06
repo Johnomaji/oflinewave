@@ -61,7 +61,7 @@ async function EventDetail({ params }: { params: PageProps<"/events/[slug]">["pa
         </div>
         <div className="absolute inset-0 -z-10 bg-gradient-to-b from-ink/40 via-ink/80 to-ink" aria-hidden />
 
-        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-8 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-14 md:px-8 md:py-14">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-5 py-8 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-14 md:px-8 md:py-14">
           <div className="md:sticky md:top-24 md:self-start">
             <Poster
               src={event.posterUrl}
@@ -264,20 +264,18 @@ async function TicketsPanel({ event }: { event: PublicEvent }) {
         {tiers.map((tier) => (
           <li
             key={tier.id}
-            className={`flex items-center justify-between gap-4 rounded-card border bg-surface p-5 ${tier.buyable ? "border-line" : "border-line/50 opacity-60"}`}
+            className={`rounded-card border bg-surface p-5 ${tier.buyable ? "border-line" : "border-line/50 opacity-60"}`}
           >
-            <div className="min-w-0">
-              <p className="font-display text-lg font-bold">
-                {tier.name}
-                {tier.admits > 1 && <span className="ml-2 text-sm font-normal text-muted">admits {tier.admits}</span>}
-                {tier.visibility === "MEMBERS" && (
-                  <Badge variant="soft" className="ml-2 align-middle">
-                    Wave Club
-                  </Badge>
-                )}
-              </p>
-              {tier.description && <p className="mt-1 text-sm text-muted">{tier.description}</p>}
-              <p className="mt-2 text-xs font-semibold uppercase tracking-wider">
+            {/* Name and price share the top row; the description gets the full width below. */}
+            <div className="flex items-start justify-between gap-3">
+              <p className="min-w-0 font-display text-lg font-bold leading-tight">{tier.name}</p>
+              <p className="shrink-0 font-display text-lg font-extrabold text-brand sm:text-xl">{formatPrice(tier.price)}</p>
+            </div>
+            {tier.description && <p className="mt-1 text-sm text-muted">{tier.description}</p>}
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold uppercase tracking-wider">
+              {tier.visibility === "MEMBERS" && <Badge variant="soft">Wave Club</Badge>}
+              {tier.admits > 1 && <span className="text-muted">Admits {tier.admits}</span>}
+              <span>
                 {tier.over ? (
                   <span className="text-muted">Sales ended</span>
                 ) : tier.notYet ? (
@@ -289,9 +287,8 @@ async function TicketsPanel({ event }: { event: PublicEvent }) {
                 ) : (
                   <span className="text-success">Available</span>
                 )}
-              </p>
+              </span>
             </div>
-            <p className="shrink-0 font-display text-xl font-extrabold text-brand">{formatPrice(tier.price)}</p>
           </li>
         ))}
       </ul>
@@ -320,11 +317,11 @@ async function TicketsPanel({ event }: { event: PublicEvent }) {
           {/* Sticky mobile CTA */}
           <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-ink/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:hidden">
             <div className="flex items-center justify-between gap-3">
-              <div>
+              <div className="shrink-0">
                 <p className="text-xs text-muted">{minPrice === 0 ? "Free" : "From"}</p>
-                <p className="font-display text-lg font-extrabold">{minPrice === 0 ? "RSVP" : formatPrice(minPrice)}</p>
+                <p className="whitespace-nowrap font-display text-lg font-extrabold">{minPrice === 0 ? "RSVP" : formatPrice(minPrice)}</p>
               </div>
-              <Button asChild size="lg" className="flex-1">
+              <Button asChild size="lg" className="min-w-0 flex-1">
                 <Link href={checkoutHref}>Get tickets</Link>
               </Button>
             </div>

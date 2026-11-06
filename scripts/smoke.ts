@@ -16,6 +16,14 @@ import { notifyWaitlist } from "@/lib/services/waitlist";
 import { getAccount } from "@/lib/services/loyalty";
 import { getFunnel } from "@/lib/analytics";
 
+// It writes test orders, so only ever run it against a database on this machine.
+const dbHost = new URL(process.env.DATABASE_URL ?? "postgresql://localhost").hostname;
+if (!["localhost", "127.0.0.1", "::1", "[::1]"].includes(dbHost)) {
+  throw new Error(`Refusing to run the smoke test against ${dbHost}: it writes test orders. Point DATABASE_URL at a local database.`);
+}
+// Never send real email to the made-up test addresses: log to the console instead.
+process.env.RESEND_API_KEY = "";
+
 const ok = (label: string, cond: boolean, extra = "") => console.log(`${cond ? "PASS" : "FAIL"}  ${label}${extra ? "  " + extra : ""}`);
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -29,11 +37,11 @@ async function expectError(label: string, fn: () => Promise<unknown>, match: Reg
 }
 
 async function main() {
-  const ev = await db.event.findUniqueOrThrow({ where: { slug: "signal-lost" }, include: { tiers: true, addOns: true } });
+  const ev = await db.event.findUniqueOrThrow({ where: { slug: "shut-up-dance-2" }, include: { tiers: true, addOns: true } });
   const regular = ev.tiers.find((t) => t.name === "Regular")!;
   const members = ev.tiers.find((t) => t.visibility === "MEMBERS")!;
   const parking = ev.addOns.find((a) => a.name === "Parking pass")!;
-  const admin = process.env.SUPER_ADMIN_EMAIL!.toLowerCase();
+  const admin = process.env.SUPER_ADMIN_EMAIL!.split(",")[0].trim().toLowerCase();
   const buyer = `e2e${Date.now()}@example.com`;
 
   // 1. Checkout with add-ons + referral code
