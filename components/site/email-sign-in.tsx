@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { signInWithEmail, type SignInState } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,11 @@ export function EmailSignIn({ next, cta = "Send my link" }: { next: string; cta?
           aria-invalid={!!state.error}
         />
         <FieldError>{state.error}</FieldError>
+        {state.staff && (
+          <Link href={`/login?staff=1&next=${encodeURIComponent(next)}`} className="mt-1.5 inline-block text-sm font-semibold text-brand hover:underline">
+            Sign in with your password
+          </Link>
+        )}
       </div>
       <Button type="submit" size="lg" className="w-full" disabled={pending}>
         {pending ? "Sending…" : cta}

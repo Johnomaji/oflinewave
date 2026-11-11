@@ -12,6 +12,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:seed-demo": "tsx prisma/seed-demo.ts",
+    "admin:password": "tsx scripts/admin-password.ts",
     "typecheck": "tsc --noEmit",
     "package": "node scripts/package.mjs",
     "test:smoke": "tsx --require ./scripts/test-stubs/register.cjs scripts/smoke.ts",

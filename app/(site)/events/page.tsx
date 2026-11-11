@@ -5,8 +5,7 @@ import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { EventCard } from "@/components/site/event-card";
-import { CATEGORY_LABELS, getCities, searchEvents, type EventFilters } from "@/lib/data/events";
-import type { EventCategory } from "@/lib/generated/prisma/enums";
+import { searchEvents, type EventFilters } from "@/lib/data/events";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -16,20 +15,25 @@ export const metadata: Metadata = {
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
-const PRICE_OPTIONS = [
-  { value: "", label: "Any price" },
-  { value: "free", label: "Free" },
-  { value: "under10k", label: "Under ₦10k" },
-  { value: "10k-30k", label: "₦10k – ₦30k" },
-  { value: "over30k", label: "₦30k+" },
-];
+const WHEN_OPTIONS = {
+  upcoming: [
+    { value: "", label: "Any date" },
+    { value: "tonight", label: "Tonight" },
+    { value: "weekend", label: "This weekend" },
+    { value: "week", label: "Next 7 days" },
+    { value: "month", label: "Next 30 days" },
+  ],
+  past: [
+    { value: "", label: "Any date" },
+    { value: "week", label: "Last 7 days" },
+    { value: "month", label: "Last 30 days" },
+    { value: "year", label: "Last 12 months" },
+  ],
+};
 
-const WHEN_OPTIONS = [
-  { value: "", label: "Any date" },
-  { value: "tonight", label: "Tonight" },
-  { value: "weekend", label: "This weekend" },
-  { value: "week", label: "Next 7 days" },
-  { value: "month", label: "Next 30 days" },
+const SORT_OPTIONS = [
+  { value: "", label: "Sort by date" },
+  { value: "name", label: "Sort by name (A–Z)" },
 ];
 
 function one(value: string | string[] | undefined) {
@@ -37,16 +41,13 @@ function one(value: string | string[] | undefined) {
 }
 
 function parseFilters(sp: SearchParams): EventFilters {
-  const category = one(sp.category);
-  const price = one(sp.price);
+  const tab = one(sp.tab) === "past" ? "past" : "upcoming";
   const when = one(sp.when);
   return {
-    tab: one(sp.tab) === "past" ? "past" : "upcoming",
+    tab,
     q: one(sp.q)?.slice(0, 80),
-    city: one(sp.city)?.slice(0, 60),
-    category: category && category in CATEGORY_LABELS ? (category as EventCategory) : undefined,
-    price: PRICE_OPTIONS.some((o) => o.value && o.value === price) ? (price as EventFilters["price"]) : undefined,
-    when: WHEN_OPTIONS.some((o) => o.value && o.value === when) ? (when as EventFilters["when"]) : undefined,
+    when: WHEN_OPTIONS[tab].some((o) => o.value && o.value === when) ? (when as EventFilters["when"]) : undefined,
+    sort: one(sp.sort) === "name" ? "name" : "date",
   };
 }
 
@@ -64,7 +65,7 @@ export default function EventsPage({ searchParams }: PageProps<"/events">) {
 
 async function Results({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const filters = parseFilters(await searchParams);
-  const [events, cities] = await Promise.all([searchEvents(filters), getCities()]);
+  const events = await searchEvents(filters);
   const past = filters.tab === "past";
 
   return (
@@ -85,36 +86,7 @@ async function Results({ searchParams }: { searchParams: Promise<SearchParams> }
         ))}
       </nav>
 
-      {!past && (
-        <nav aria-label="Quick filters" className="mt-6 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
-          {([
-            { label: "Tonight", params: { when: "tonight" } },
-            { label: "This weekend", params: { when: "weekend" } },
-            { label: "Free", params: { price: "free" } },
-            ...Object.entries(CATEGORY_LABELS)
-              .filter(([key]) => key !== "OTHER")
-              .map(([key, label]) => ({ label, params: { category: key } })),
-          ] as { label: string; params: Record<string, string> }[]).map((chip) => {
-            const active = Object.entries(chip.params).every(([k, v]) => (filters as Record<string, unknown>)[k] === v);
-            const href = active ? "/events" : `/events?${new URLSearchParams(chip.params)}`;
-            return (
-              <Link
-                key={chip.label}
-                href={href}
-                aria-pressed={active}
-                className={cn(
-                  "shrink-0 rounded-full border px-4 py-1.5 text-sm transition",
-                  active ? "border-brand bg-brand/15 text-brand" : "border-line text-muted hover:border-white/40 hover:text-white",
-                )}
-              >
-                {chip.label}
-              </Link>
-            );
-          })}
-        </nav>
-      )}
-
-      <form method="get" action="/events" className="mt-6 grid gap-3 rounded-card border border-line bg-surface p-4 md:grid-cols-[2fr_1fr_1fr_1fr_1fr_auto]" role="search">
+      <form method="get" action="/events" className="mt-6 grid gap-3 rounded-card border border-line bg-surface p-4 md:grid-cols-[2fr_1fr_1fr_auto]" role="search">
         {past && <input type="hidden" name="tab" value="past" />}
         <div className="relative">
           <label htmlFor="q" className="sr-only">
@@ -123,10 +95,8 @@ async function Results({ searchParams }: { searchParams: Promise<SearchParams> }
           <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
           <Input id="q" name="q" defaultValue={filters.q} placeholder="Search events, artists, venues" className="pl-11" />
         </div>
-        <FilterSelect name="category" label="Category" value={filters.category} options={[{ value: "", label: "All types" }, ...Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label }))]} />
-        <FilterSelect name="city" label="Location" value={filters.city} options={[{ value: "", label: "All cities" }, ...cities.map((c) => ({ value: c, label: c }))]} />
-        {!past && <FilterSelect name="when" label="Date" value={filters.when} options={WHEN_OPTIONS} />}
-        {!past && <FilterSelect name="price" label="Price" value={filters.price} options={PRICE_OPTIONS} />}
+        <FilterSelect name="when" label="Date" value={filters.when} options={WHEN_OPTIONS[filters.tab]} />
+        <FilterSelect name="sort" label="Sort" value={filters.sort === "name" ? "name" : ""} options={SORT_OPTIONS} />
         <Button type="submit" className="h-12">
           Filter
         </Button>

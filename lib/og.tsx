@@ -18,7 +18,7 @@ export const logoSrc = () => imageSrc("/brand/logo.png");
 
 export function Wordmark({ src, height = 56 }: { src: string; height?: number }) {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt="Oflinewave" height={height} width={Math.round((height * 462) / 136)} />;
+  return <img src={src} alt="Oflinewave" height={height} width={Math.round((height * 1021) / 300)} />;
 }
 
 /** The orange wave at the bottom of every share card. */

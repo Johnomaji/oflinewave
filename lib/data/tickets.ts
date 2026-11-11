@@ -10,6 +10,7 @@ export type TicketCredentials = { ticketToken?: string; orderToken?: string };
  *  - the current holder's link (ticket view token, rotates on transfer)
  *  - the buyer's order link, for tickets they haven't transferred away
  *  - a signed-in user whose email is the holder's, or an admin
+ *  - the signed-in buyer (checkout email or the account that placed it), same rule as the order link
  */
 export async function getAuthorizedTicket(ticketId: string, creds: TicketCredentials) {
   const ticket = await db.ticket.findUnique({
@@ -17,7 +18,7 @@ export async function getAuthorizedTicket(ticketId: string, creds: TicketCredent
     include: {
       tier: true,
       event: { include: { venue: true } },
-      order: { select: { id: true, reference: true, accessToken: true, buyerEmail: true, status: true } },
+      order: { select: { id: true, reference: true, accessToken: true, buyerEmail: true, userId: true, status: true } },
       transfers: { orderBy: { createdAt: "desc" }, take: 5 },
     },
   });
@@ -27,6 +28,8 @@ export async function getAuthorizedTicket(ticketId: string, creds: TicketCredent
   if (creds.orderToken && !ticket.transferredAt && safeEqual(creds.orderToken, ticket.order.accessToken)) return ticket;
 
   const user = await getCurrentUser();
-  if (user && (user.email === ticket.holderEmail || isAdmin(user))) return ticket;
+  if (!user) return null;
+  const isBuyer = user.email === ticket.order.buyerEmail || ticket.order.userId === user.id;
+  if (user.email === ticket.holderEmail || (isBuyer && !ticket.transferredAt) || isAdmin(user)) return ticket;
   return null;
 }

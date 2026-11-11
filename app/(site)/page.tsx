@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "@/components/site/event-card";
-import { NewsletterForm } from "@/components/site/newsletter-form";
 import { Poster } from "@/components/site/poster";
 import { Reveal } from "@/components/site/reveal";
 import { Glow, WaveDivider, WaveLine } from "@/components/site/wave";
@@ -12,6 +11,7 @@ import { fromPrice, getFeaturedEvent, getPastEvents, getUpcomingEvents, isSoldOu
 import { formatPrice } from "@/lib/money";
 import { getSettings } from "@/lib/settings";
 import { cn } from "@/lib/utils";
+import logo from "@/public/brand/logo.png";
 
 export default async function HomePage() {
   const [featured, upcoming, past, settings] = await Promise.all([
@@ -27,7 +27,9 @@ export default async function HomePage() {
 
   return (
     <>
-      <Hero featured={featured} />
+      <BrandHero />
+
+      {featured && <FeaturedEvent featured={featured} />}
 
       {rest.length > 0 && (
         <section className="mx-auto max-w-7xl px-5 py-20 md:px-8 md:py-28" aria-labelledby="upcoming-heading">
@@ -119,17 +121,6 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
-
-      <section className="relative overflow-hidden px-5 pb-24 md:px-8">
-        <div className="relative mx-auto max-w-4xl overflow-hidden rounded-[2rem] border border-brand/30 bg-gradient-to-br from-brand/20 via-surface to-surface p-8 text-center md:p-16">
-          <WaveLine className="absolute inset-x-0 top-6 h-10 opacity-40" />
-          <h2 className="relative text-4xl font-extrabold md:text-5xl">First to know. First on the floor.</h2>
-          <p className="relative mx-auto mt-4 max-w-md text-muted">Drops go fast. Get early-bird links before anyone else.</p>
-          <div className="relative mt-8 flex justify-center">
-            <NewsletterForm />
-          </div>
-        </div>
-      </section>
     </>
   );
 }
@@ -152,37 +143,39 @@ function FloorPhoto({ src, alt, className }: { src: string; alt: string; classNa
   );
 }
 
-function Hero({ featured }: { featured: Awaited<ReturnType<typeof getFeaturedEvent>> }) {
-  if (!featured) {
-    return (
-      <section className="relative overflow-hidden px-5 pb-24 pt-20 text-center md:px-8">
-        <Glow className="left-1/2 top-0 size-[32rem] -translate-x-1/2" />
-        <h1 className="relative text-6xl font-extrabold leading-[0.9] md:text-8xl">
-          Get offline.
-          <br />
-          <span className="text-brand text-glow">Get loud.</span>
+/** First screen: the wordmark and the tagline, nothing else. */
+function BrandHero() {
+  return (
+    <section className="relative grid min-h-[calc(100svh-4rem)] place-items-center overflow-hidden px-5 py-20 text-center md:px-8">
+      <Glow className="left-1/2 top-1/2 size-[36rem] -translate-x-1/2 -translate-y-1/2" />
+      <div className="relative w-full max-w-4xl">
+        <h1>
+          <Image src={logo} alt="Oflinewave" preload sizes="(min-width: 960px) 56rem, 90vw" className="h-auto w-full" />
         </h1>
-        <p className="relative mx-auto mt-6 max-w-md text-lg text-muted">New nights dropping soon. Join the list and be first in.</p>
-        <WaveLine className="mt-16 h-20" />
-      </section>
-    );
-  }
+        <p className="mt-8 font-display text-2xl font-extrabold tracking-tight md:mt-10 md:text-4xl">
+          Get offline. <span className="text-brand text-glow">Get loud.</span>
+        </p>
+      </div>
+    </section>
+  );
+}
 
+function FeaturedEvent({ featured }: { featured: NonNullable<Awaited<ReturnType<typeof getFeaturedEvent>>> }) {
   const price = fromPrice(featured);
   const soldOut = isSoldOut(featured);
 
   return (
-    <section className="relative overflow-hidden" aria-labelledby="hero-heading">
+    <section className="relative overflow-hidden" aria-labelledby="featured-heading">
       <Glow className="-left-40 top-10 size-[36rem]" />
       <Glow className="-right-40 bottom-0 size-[28rem] opacity-60" />
-      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-5 pb-16 pt-10 md:grid-cols-[1.1fr_0.9fr] md:gap-16 md:px-8 md:pb-24 md:pt-16">
+      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-5 py-16 md:grid-cols-[1.1fr_0.9fr] md:gap-16 md:px-8 md:py-24">
         <div className="order-2 min-w-0 md:order-1">
           <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-brand/40 bg-brand/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-brand">
             <span className="size-1.5 rounded-full bg-brand animate-pulse-glow" /> Next up
           </p>
-          <h1 id="hero-heading" className="text-[clamp(2.5rem,10vw,7.5rem)] font-extrabold leading-[0.9] text-balance [overflow-wrap:anywhere]">
+          <h2 id="featured-heading" className="text-[clamp(2.5rem,10vw,7.5rem)] font-extrabold leading-[0.9] text-balance [overflow-wrap:anywhere]">
             {featured.title}
-          </h1>
+          </h2>
           {featured.tagline && <p className="mt-5 max-w-lg text-lg text-muted md:text-xl">{featured.tagline}</p>}
           <dl className="mt-8 grid max-w-lg gap-3 text-sm sm:grid-cols-2">
             <div className="flex items-center gap-3">
@@ -223,7 +216,6 @@ function Hero({ featured }: { featured: Awaited<ReturnType<typeof getFeaturedEve
             <Poster
               src={featured.posterUrl}
               alt={`${featured.title} poster`}
-              priority
               sizes="(min-width: 768px) 40vw, 80vw"
               waves
               className="relative rounded-card border border-white/10 shadow-2xl"

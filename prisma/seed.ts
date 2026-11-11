@@ -9,6 +9,7 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, type Prisma } from "../lib/generated/prisma/client";
 import { newId } from "../lib/ids";
+import { hashPassword } from "../lib/password";
 import { computePricing } from "../lib/pricing";
 import { createAccessToken, createOrderReference, createQrToken, createTicketCode } from "../lib/tickets/token";
 
@@ -23,6 +24,7 @@ if (!["localhost", "127.0.0.1", "::1", "[::1]"].includes(dbHost) && process.env.
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 
 const DAY = 86_400_000;
+const DEV_STAFF_PASSWORD = "wave-dev-password";
 const HOUR = 3_600_000;
 
 /** A date N days from today at a given Lagos (UTC+1) hour. */
@@ -172,16 +174,18 @@ async function main() {
 
   // Staff
   // The first SUPER_ADMIN_EMAIL is seeded; any others are promoted when they sign in.
+  // Local-only staff password (the seed refuses non-local databases).
+  const devPasswordHash = await hashPassword(DEV_STAFF_PASSWORD);
   const adminEmail = (process.env.SUPER_ADMIN_EMAIL?.split(",")[0]?.trim() || "admin@oflinewave.test").toLowerCase();
   const admin = await db.user.upsert({
     where: { email: adminEmail },
-    update: { role: "SUPER_ADMIN" },
-    create: { email: adminEmail, name: "Oflinewave Admin", role: "SUPER_ADMIN" },
+    update: { role: "SUPER_ADMIN", passwordHash: devPasswordHash },
+    create: { email: adminEmail, name: "Oflinewave Admin", role: "SUPER_ADMIN", passwordHash: devPasswordHash },
   });
   const door = await db.user.upsert({
     where: { email: "door@oflinewave.test" },
-    update: { role: "DOOR_STAFF" },
-    create: { email: "door@oflinewave.test", name: "Door Team", role: "DOOR_STAFF" },
+    update: { role: "DOOR_STAFF", passwordHash: devPasswordHash },
+    create: { email: "door@oflinewave.test", name: "Door Team", role: "DOOR_STAFF", passwordHash: devPasswordHash },
   });
   await db.staffMember.createMany({
     data: [
@@ -458,7 +462,7 @@ async function main() {
 
   const [orders, tickets] = await Promise.all([db.order.count(), db.ticket.count()]);
   console.log(`Seeded 5 events, ${orders} orders, ${tickets} tickets.`);
-  console.log(`Super admin: ${adminEmail}  ·  Door staff: ${door.email}`);
+  console.log(`Super admin: ${adminEmail}  ·  Door staff: ${door.email}  ·  Password: ${DEV_STAFF_PASSWORD}`);
   console.log(`Test ticket: /orders/${testOrder.id}?t=${testOrder.accessToken}  (code TESTDOOR)`);
 }
 

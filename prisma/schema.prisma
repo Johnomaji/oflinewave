@@ -97,6 +97,12 @@ model User {
   emailVerified DateTime?
   image         String?
   role          Role      @default(ATTENDEE)
+  /// Staff only (door staff, organizers, admins). Customers sign in with an email link.
+  passwordHash       String?
+  /// Set when an admin gives someone a temporary password.
+  mustChangePassword Boolean   @default(false)
+  /// Raised when the password or role changes. Sessions signed in with an older value stop working.
+  sessionVersion     Int       @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

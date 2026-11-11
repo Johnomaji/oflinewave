@@ -84,19 +84,13 @@ export async function getFeaturedEvent(): Promise<EventCard | null> {
 
 export type EventFilters = {
   q?: string;
-  category?: EventCategory;
-  city?: string;
-  price?: "free" | "under10k" | "10k-30k" | "over30k";
-  when?: "tonight" | "weekend" | "week" | "month";
+  /** "week", "month" and "year" look forward on the upcoming tab and back on the past tab. */
+  when?: "tonight" | "weekend" | "week" | "month" | "year";
+  sort?: "date" | "name";
   tab: "upcoming" | "past";
 };
 
-const PRICE_RANGES: Record<NonNullable<EventFilters["price"]>, [number, number]> = {
-  free: [0, 0],
-  under10k: [1, 1_000_000],
-  "10k-30k": [1_000_000, 3_000_000],
-  over30k: [3_000_001, Number.MAX_SAFE_INTEGER],
-};
+const WHEN_DAYS = { week: 7, month: 31, year: 365 };
 
 export async function searchEvents(filters: EventFilters): Promise<EventCard[]> {
   "use cache";
@@ -116,24 +110,22 @@ export async function searchEvents(filters: EventFilters): Promise<EventCard[]> 
       ],
     });
   }
-  if (filters.category) and.push({ category: filters.category });
-  if (filters.city) and.push({ venue: { city: { equals: filters.city, mode: "insensitive" } } });
   if (filters.when === "tonight" || filters.when === "weekend") {
     const [from, to] = filters.when === "tonight" ? tonightRange(now) : weekendRange(now);
     // Anything running during the window, including events that started earlier.
     and.push({ startsAt: { lt: to }, OR: [{ endsAt: { gte: from } }, { endsAt: null, startsAt: { gte: from } }] });
   } else if (filters.when) {
-    const days = filters.when === "week" ? 7 : 31;
-    and.push({ startsAt: { lte: new Date(now.getTime() + days * 86_400_000) } });
-  }
-  if (filters.price) {
-    const [min, max] = PRICE_RANGES[filters.price];
-    and.push({ tiers: { some: { visibility: "PUBLIC", price: { gte: min, lte: max } } } });
+    const span = WHEN_DAYS[filters.when] * 86_400_000;
+    and.push(
+      filters.tab === "past"
+        ? { startsAt: { gte: new Date(now.getTime() - span) } }
+        : { startsAt: { lte: new Date(now.getTime() + span) } },
+    );
   }
 
   return db.event.findMany({
     where: { AND: and },
-    orderBy: { startsAt: filters.tab === "past" ? "desc" : "asc" },
+    orderBy: filters.sort === "name" ? { title: "asc" } : { startsAt: filters.tab === "past" ? "desc" : "asc" },
     take: 48,
     select: cardSelect,
   });
@@ -154,19 +146,6 @@ export async function getRelatedEvents(eventId: string, category: EventCategory,
     select: cardSelect,
   });
   return [...same, ...others];
-}
-
-export async function getCities(): Promise<string[]> {
-  "use cache";
-  cacheLife("hours");
-  cacheTag(EVENTS_TAG);
-  const venues = await db.venue.findMany({
-    where: { events: { some: { status: "PUBLISHED" } } },
-    distinct: ["city"],
-    select: { city: true },
-    orderBy: { city: "asc" },
-  });
-  return venues.map((v) => v.city);
 }
 
 /** Public event page payload. Hidden (code-only) tiers are never included; member-only tiers are, marked by visibility. */

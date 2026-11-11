@@ -10,6 +10,7 @@ import { emailLayout } from "@/lib/email/layout";
 import { sendEmail } from "@/lib/email/send";
 import { getTemplates, renderTemplate } from "@/lib/email/templates";
 import { nairaToKobo } from "@/lib/money";
+import { MIN_PASSWORD_LENGTH, hashPassword } from "@/lib/password";
 import { SETTINGS_TAG } from "@/lib/settings";
 
 const optionalUrl = z.url().max(300).optional().or(z.literal("").transform(() => undefined));
@@ -50,27 +51,54 @@ export async function saveSettings(_prev: ActionState, formData: FormData): Prom
 const inviteSchema = z.object({
   email: z.email().max(200),
   role: z.enum(["DOOR_STAFF", "ORGANIZER", "SUPER_ADMIN", "ATTENDEE"]),
+  password: z
+    .string()
+    .max(200)
+    .refine((p) => p === "" || p.length >= MIN_PASSWORD_LENGTH, `Temporary password: at least ${MIN_PASSWORD_LENGTH} characters.`)
+    .optional(),
 });
 
-/** Invite or change a team member. ATTENDEE removes staff access. */
+/**
+ * Add or change a team member. ATTENDEE removes staff access (and their password).
+ * A temporary password is required for someone new; they must change it on first sign-in.
+ */
 export async function setStaffRole(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const actor = await requireRole(["SUPER_ADMIN"], "/admin/settings");
   const parsed = inviteSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the form." };
   const email = parsed.data.email.toLowerCase();
-  const role = parsed.data.role;
+  const { role, password } = parsed.data;
   if (email === actor.email && role !== "SUPER_ADMIN") return { error: "You can't demote yourself." };
 
   if (role === "ATTENDEE") {
     await db.staffMember.deleteMany({ where: { email } });
-  } else {
-    await db.staffMember.upsert({ where: { email }, update: { role }, create: { email, role, invitedById: actor.id } });
+    // Raising sessionVersion signs them out everywhere.
+    await db.user.updateMany({ where: { email }, data: { role, passwordHash: null, mustChangePassword: false, sessionVersion: { increment: 1 } } });
+    await audit(actor.id, "team.role_set", "StaffMember", email, { role });
+    revalidatePath("/admin/settings");
+    return { ok: `${email} removed from the team.` };
   }
-  // Existing accounts change immediately; new ones pick it up on first sign-in.
-  await db.user.updateMany({ where: { email }, data: { role } });
-  await audit(actor.id, "team.role_set", "StaffMember", email, { role });
+
+  const existing = await db.user.findUnique({ where: { email }, select: { role: true, passwordHash: true } });
+  if (!password && !existing?.passwordHash) return { error: "Set a temporary password for them to sign in with." };
+  const passwordData = password ? { passwordHash: await hashPassword(password), mustChangePassword: true } : {};
+  // A new role or password signs them out everywhere, so no older session keeps (or gains) access.
+  const signOutEverywhere = existing && (existing.role !== role || !!password) ? { sessionVersion: { increment: 1 } } : {};
+
+  await db.staffMember.upsert({ where: { email }, update: { role }, create: { email, role, invitedById: actor.id } });
+  await db.user.upsert({
+    where: { email },
+    update: { role, ...passwordData, ...signOutEverywhere },
+    create: { email, role, ...passwordData },
+  });
+  await audit(actor.id, "team.role_set", "StaffMember", email, { role, passwordReset: Boolean(password) });
   revalidatePath("/admin/settings");
-  return { ok: role === "ATTENDEE" ? `${email} removed from the team.` : `${email} is now ${role.replace("_", " ").toLowerCase()}. They sign in with this email.` };
+  const roleName = role.replace("_", " ").toLowerCase();
+  return {
+    ok: password
+      ? `${email} is now ${roleName}. Give them the temporary password; they'll choose their own when they first sign in (Staff tab on /login).`
+      : `${email} is now ${roleName}.`,
+  };
 }
 
 const templateSchema = z.object({

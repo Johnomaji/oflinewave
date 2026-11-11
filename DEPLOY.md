@@ -68,7 +68,7 @@ Set these in the host's control panel. Never upload a `.env` file.
 | `APP_URL` | `https://oflinewave.com` (no trailing slash) |
 | `AUTH_SECRET` | a new random value: run `npx auth secret` |
 | `TICKET_SIGNING_SECRET` | a new random value, 32+ characters. **Never change it later**, or every issued ticket stops scanning |
-| `SUPER_ADMIN_EMAIL` | your email; you become admin the first time you sign in. For several admins, comma-separate them: `you@example.com,partner@example.com` |
+| `SUPER_ADMIN_EMAIL` | your email. Staff emails (this one included) can only sign in with a password, never an email link. For several admins, comma-separate them: `you@example.com,partner@example.com` |
 | `PAYSTACK_SECRET_KEY` | `sk_test_…` while testing, `sk_live_…` for real sales |
 | `RESEND_API_KEY` | from Resend, after verifying your domain there |
 | `EMAIL_FROM` | `Oflinewave <tickets@oflinewave.com>` |
@@ -86,7 +86,7 @@ Optional ones (Google sign-in, Sentry, wallet passes, Plausible) are listed in `
   `https://oflinewave.com/api/payments/paystack/webhook`
 - **Resend:** add the DNS records it gives you in your domain's DNS settings, and wait for *Verified*.
 - **Google sign-in (optional):** authorised redirect URI `https://oflinewave.com/api/auth/callback/google`.
-- **First admin:** sign in at `/login` with `SUPER_ADMIN_EMAIL`, then create your events in `/admin`.
+- **First admin:** on your computer, run `npm run admin:password -- you@email.com` (it uses the live database from `.env.production.local` and asks you to choose a password). Then sign in at `/login` → **Staff**, and add the rest of the team with temporary passwords in **Admin → Settings → Team**. To reset a forgotten admin password, run the same command again.
 
 ## If something goes wrong
 

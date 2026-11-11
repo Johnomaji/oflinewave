@@ -370,7 +370,7 @@ export function EventForm({ initial, venues, soldByTier = {} }: { initial: Event
         </div>
         <div className="mt-4 space-y-3">
           <Toggle id="listed" label="List publicly (show on /events and home)" checked={form.listed} onChange={(v) => set("listed", v)} />
-          <Toggle id="featured" label="Feature in the home hero" checked={form.featured} onChange={(v) => set("featured", v)} />
+          <Toggle id="featured" label="Feature on the home page" checked={form.featured} onChange={(v) => set("featured", v)} />
           <Toggle id="names" label="Collect a name for every ticket" checked={form.collectAttendeeNames} onChange={(v) => set("collectAttendeeNames", v)} />
           <Toggle id="transfers" label="Let buyers transfer tickets and change names" checked={form.transfersEnabled} onChange={(v) => set("transfersEnabled", v)} />
           {form.transfersEnabled && (

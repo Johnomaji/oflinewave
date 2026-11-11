@@ -48,7 +48,7 @@ Everything works offline from Paystack and Resend in development:
 - **Staff:** `SUPER_ADMIN_EMAIL` as super admin, plus `door@oflinewave.test` as door staff.
 - **A scannable test ticket** with code `TESTDOOR` on Signal Lost. The seed prints its URL.
 
-To sign in as the admin, go to `/login`, enter `SUPER_ADMIN_EMAIL` and click the link printed in the dev console.
+Staff sign in with a password: go to `/login` → **Staff**. The seed gives both staff accounts the password it prints at the end. Customers sign in with an email link (printed in the dev console without a Resend key).
 
 ---
 
@@ -60,13 +60,14 @@ To sign in as the admin, go to `/login`, enter `SUPER_ADMIN_EMAIL` and click the
 | `APP_URL` | ✅ | Public base URL, no trailing slash. Used in emails, QR image links and OG tags. |
 | `AUTH_SECRET` | ✅ | Auth.js session encryption. |
 | `TICKET_SIGNING_SECRET` | ✅ | HMAC key for QR codes. **Never rotate after tickets exist**: old QRs would stop scanning. |
-| `SUPER_ADMIN_EMAIL` | ✅ | Gets `SUPER_ADMIN` on sign-in. Use it to bootstrap the first admin. Comma-separate several emails for more than one. |
+| `SUPER_ADMIN_EMAIL` | ✅ | Admin email(s), comma-separated. These can only sign in with a password. Create the password with `npm run admin:password -- you@email.com`. |
 | `PAYSTACK_SECRET_KEY` | ✅ prod | `sk_test_…` for staging, `sk_live_…` for production. |
 | `RESEND_API_KEY` | ✅ prod | The sending domain must be verified in Resend. |
 | `EMAIL_FROM` | | Defaults to `Oflinewave <tickets@oflinewave.com>`. |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | | Google sign-in. |
 | `BLOB_READ_WRITE_TOKEN` | uploads on Vercel | Vercel Blob, for poster uploads. Without it, uploads go to disk. |
 | `UPLOAD_DIR` | | Disk folder for uploads on cPanel or a VPS. Keep it outside the app folder. |
+| `TRUSTED_PROXIES` | | Proxies in front of the app that add to `X-Forwarded-For`, used to find visitors' real IPs for rate limits. Default `1`; use `2` behind Cloudflare. |
 | `NEXT_PUBLIC_SENTRY_DSN` (+ `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`) | recommended | Error monitoring. Sentry stays off until the DSN is set. The auth token uploads source maps at build time. |
 | `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | | Optional Plausible page analytics. The ticket funnel is built in and needs no setup. |
 | `GOOGLE_WALLET_*` | | Issuer ID, service account email and private key. Shows "Save to Google Wallet". |
@@ -93,7 +94,7 @@ Secrets live only in env vars, never in the database. The admin Settings page sh
 5. **Resend.** Verify your sending domain and set `EMAIL_FROM` to an address on it.
 6. **Google (optional).** Add `https://YOUR_DOMAIN/api/auth/callback/google` as an authorized redirect URI.
 7. **Blob.** Create a Vercel Blob store and link it to the project; this sets `BLOB_READ_WRITE_TOKEN`.
-8. Sign in with `SUPER_ADMIN_EMAIL`, then invite the team from **Admin → Settings → Team**.
+8. Run `npm run admin:password -- you@email.com`, sign in at `/login` → **Staff**, then add the team (with temporary passwords) from **Admin → Settings → Team**.
 
 > The build prerenders public pages, which reads from the database, so `DATABASE_URL` must be reachable at build time.
 
@@ -144,7 +145,7 @@ proxy.ts             optimistic auth redirect for /admin and /scan
 
 The palette, fonts, radii and glow shadows live in the `@theme` block of [app/globals.css](app/globals.css). This is Tailwind v4's CSS-first config, which replaces `tailwind.config.js`. It generates utilities such as `bg-ink`, `bg-surface`, `border-line`, `text-muted`, `bg-brand`, `hover:bg-brand-hover`, `font-display` and `shadow-glow`. [lib/tokens.ts](lib/tokens.ts) mirrors the colours for places Tailwind can't reach (OG images, emails, PDFs). Keep the two in sync.
 
-Display headings use **Syne** and body text uses **Inter**. Animations respect `prefers-reduced-motion`.
+Display headings use **Archivo Black** and body text uses **Inter**. Animations respect `prefers-reduced-motion`.
 
 ### Money
 

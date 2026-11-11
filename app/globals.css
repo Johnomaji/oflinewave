@@ -19,7 +19,7 @@
   --color-warning: #f59e0b;
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-syne), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-display: var(--font-archivo-black), var(--font-inter), ui-sans-serif, sans-serif;
 
   --radius-card: 1rem;
 
@@ -52,6 +52,8 @@
   html {
     color-scheme: dark;
     -webkit-tap-highlight-color: transparent;
+    /* Archivo Black has one weight, so font-bold/extrabold would get a smeared fake bold. Draw it as designed. */
+    font-synthesis: style;
   }
   body {
     @apply bg-ink text-white font-sans antialiased;
@@ -95,7 +97,7 @@
   }
 }
 
-/* Hero poster entrance: CSS-only so the LCP image is visible before hydration. */
+/* Featured poster entrance: CSS-only so the poster is visible before hydration. */
 @keyframes poster-in {
   from {
     opacity: 0.4;

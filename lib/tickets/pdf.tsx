@@ -10,7 +10,7 @@ const c = tokens.colors;
 
 const styles = StyleSheet.create({
   page: { backgroundColor: c.black, color: c.white, padding: 36, fontFamily: "Helvetica" },
-  brand: { height: 34, width: 115, marginBottom: 24 },
+  brand: { height: 34, width: 116, marginBottom: 24 },
   card: { backgroundColor: c.surface, borderRadius: 16, borderWidth: 1, borderColor: c.border, overflow: "hidden" },
   band: { backgroundColor: c.orange, paddingVertical: 18, paddingHorizontal: 24 },
   bandLabel: { fontSize: 9, color: c.black, letterSpacing: 2 },

@@ -2,6 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
+import { ipFromHeaders } from "@/lib/rate-limit";
 
 /**
  * First-party, cookie-free analytics for the ticket funnel:
@@ -16,7 +17,7 @@ export type FunnelStep = (typeof FUNNEL_STEPS)[number];
 export async function visitorHash() {
   try {
     const h = await headers();
-    const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "";
+    const ip = ipFromHeaders(h);
     const ua = h.get("user-agent") ?? "";
     const day = new Date().toISOString().slice(0, 10);
     return createHash("sha256").update(`${day}:${process.env.AUTH_SECRET}:${ip}:${ua}`).digest("base64url").slice(0, 22);

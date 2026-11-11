@@ -10,7 +10,7 @@ export function ContentPage({
   media,
   children,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: ReactNode;
   intro?: string;
   updated?: string;
@@ -20,7 +20,7 @@ export function ContentPage({
 }) {
   return (
     <article className="mx-auto max-w-3xl px-5 py-12 md:py-20">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-brand">{eyebrow}</p>
+      {eyebrow && <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-brand">{eyebrow}</p>}
       <h1 className="text-5xl font-extrabold leading-[0.9] md:text-7xl">{title}</h1>
       {intro && <p className="mt-6 text-xl text-muted">{intro}</p>}
       {updated && <p className="mt-4 text-sm text-muted">Last updated {updated}</p>}

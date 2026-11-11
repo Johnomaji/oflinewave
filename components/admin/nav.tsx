@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, CalendarRange, ScanLine, Settings, Tag, Receipt, ExternalLink, QrCode } from "lucide-react";
+import { BarChart3, CalendarRange, ScanLine, Settings, Tag, Receipt, ExternalLink, KeyRound, QrCode } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
@@ -50,6 +50,9 @@ function NavLinks({ pathname }: { pathname: string }) {
       <div className="hidden md:my-4 md:block md:border-t md:border-line" />
       <Link href="/scan" className="flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted hover:text-white">
         <QrCode className="size-4" aria-hidden /> Door scanner
+      </Link>
+      <Link href="/account/password" className="flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted hover:text-white">
+        <KeyRound className="size-4" aria-hidden /> Change password
       </Link>
       <Link href="/" className="flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted hover:text-white">
         <ExternalLink className="size-4" aria-hidden /> View site

@@ -11,7 +11,8 @@ function safeEqual(a: string, b: string) {
 
 /**
  * Loads an order if the requester may see it: holder of the secret access
- * token (guest link), the signed-in buyer, or an admin.
+ * token (guest link), the signed-in buyer, or an admin. "Buyer" matches My tickets: the checkout
+ * email, or the account that placed it (someone signed in can buy with a friend's email).
  */
 export async function getAuthorizedOrder(orderId: string, token: string | undefined) {
   const order = await db.order.findUnique({
@@ -27,6 +28,6 @@ export async function getAuthorizedOrder(orderId: string, token: string | undefi
   if (token && safeEqual(token, order.accessToken)) return order;
 
   const user = await getCurrentUser();
-  if (user && (user.email === order.buyerEmail || isAdmin(user))) return order;
+  if (user && (user.email === order.buyerEmail || order.userId === user.id || isAdmin(user))) return order;
   return null;
 }

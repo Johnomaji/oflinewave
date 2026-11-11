@@ -71,7 +71,7 @@ async function Settings() {
 
       <Card className="p-6">
         <h2 className="mb-1 text-xl font-bold">Team</h2>
-        <p className="mb-5 text-sm text-muted">Door staff can only scan. Organizers run events and orders. Super admins manage settings and the team.</p>
+        <p className="mb-5 text-sm text-muted">Door staff can only scan. Organizers run events and orders. Super admins manage settings and the team. New people need a temporary password; they choose their own on first sign-in. To reset someone&apos;s password, save them again with a new temporary one.</p>
         <TableWrap>
           <table className="w-full text-sm">
             <thead className="border-b border-line">

@@ -6,7 +6,7 @@ import { MobileMenu } from "./mobile-menu";
 
 export const NAV = [
   { href: "/events", label: "Events" },
-  { href: "/events?tab=past", label: "Past nights" },
+  { href: "/events?tab=past", label: "Past events" },
   { href: "/about", label: "About" },
   { href: "/faq", label: "FAQ" },
 ];

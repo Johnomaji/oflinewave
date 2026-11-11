@@ -102,12 +102,18 @@ export function TeamForm({ action }: { action: Action }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(action, {});
   return (
     <form action={formAction} className="space-y-3">
-      <div className="grid gap-3 md:grid-cols-[2fr_1fr_auto]">
+      <div className="grid gap-3 md:grid-cols-[2fr_1.5fr_1fr_auto]">
         <div>
           <label htmlFor="team-email" className="sr-only">
             Email
           </label>
           <Input id="team-email" name="email" type="email" required placeholder="teammate@email.com" />
+        </div>
+        <div>
+          <label htmlFor="team-password" className="sr-only">
+            Temporary password
+          </label>
+          <Input id="team-password" name="password" type="text" minLength={8} autoComplete="off" placeholder="Temporary password" />
         </div>
         <div>
           <label htmlFor="team-role" className="sr-only">

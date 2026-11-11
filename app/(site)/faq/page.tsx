@@ -32,7 +32,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
 
 export default function FaqPage() {
   return (
-    <ContentPage eyebrow="FAQ" title="Questions? Answered." intro="Everything you need before you hit the floor.">
+    <ContentPage title="FAQ" intro="Everything you need before you hit the floor.">
       <div className="divide-y divide-line rounded-card border border-line bg-surface">
         {FAQS.map((f) => (
           <details key={f.q} className="group p-5">
